@@ -24,10 +24,9 @@ print('num cpus:', multiprocessing.cpu_count())
 csv_path = './data/img_name.csv'
 train_data, test_data, train_loader, test_loader = loadData(csv_path)
 
-# print(train_data[])
-model = neuralRMP()
+model = neuralRMP().to(device)
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
 
 
 def train():
@@ -39,7 +38,12 @@ def train():
         for i, data in enumerate(train_loader):
             frame, velocity, angular_v, goal, cp_metrics, cp_accels = data
             optimizer.zero_grad()
-
+            frame = frame.to(device)
+            velocity = velocity.to(device)
+            angular_v = angular_v.to(device)
+            goal = goal.to(device)
+            cp_metrics = cp_metrics.to(device)
+            cp_accels = cp_accels.to(device)
             accel, metric_full = model(frame, velocity, angular_v, goal)
             loss = criterion(accel, cp_accels) + criterion(metric_full, cp_metrics)
             loss.backward()
@@ -47,11 +51,10 @@ def train():
 
             running_loss += loss
             running_acc += (torch.sum(accel == cp_accels) + torch.sum(metric_full == cp_metrics))
-
-        epoch_loss = running_loss / len(train_loader.dataset)
-        epoch_acc = running_loss / len(train_loader.dataset)
-        print('loss: ', epoch_loss, 'acc: ', epoch_acc)
+            print('Running', i, '/', len(train_loader.dataset))
+        epoch_loss = float(running_loss) / len(train_loader.dataset)
+        epoch_acc = float(running_acc) / len(train_loader.dataset)
+        print('epoch loss: ', epoch_loss, 'epoch acc: ', epoch_acc)
 
 train()
-# def test():
 

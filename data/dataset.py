@@ -35,6 +35,9 @@ class rmpDataset(Dataset):
 def loadData(csv_path):
     df_dataset = pd.read_csv(csv_path)
     df_train, df_test = train_test_split(df_dataset, test_size=0.2)
+    df_train.index = range(len(df_train))
+    df_test.index = range(len(df_test))
+
     train_data = rmpDataset(df_train)
     test_data = rmpDataset(df_test)
     train_loader = DataLoader(dataset=train_data, batch_size=1, shuffle=True, num_workers=2)
