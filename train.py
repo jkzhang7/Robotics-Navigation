@@ -51,10 +51,36 @@ def train():
 
             running_loss += loss
             running_acc += (torch.sum(accel == cp_accels) + torch.sum(metric_full == cp_metrics))
-            print('Running', i, '/', len(train_loader.dataset))
+            if i == 0 or i == 30 or i == 71:
+                print('Running', i, '/', len(train_loader.dataset))
+
         epoch_loss = float(running_loss) / len(train_loader.dataset)
-        epoch_acc = float(running_acc) / len(train_loader.dataset)
-        print('epoch loss: ', epoch_loss, 'epoch acc: ', epoch_acc)
+        epoch_acc = running_acc / len(train_loader.dataset)
+        print('epoch loss: ', float(epoch_loss), 'epoch acc: ', float(epoch_acc))
+
 
 train()
 
+
+def test():
+    test_acc, test_loss = 0, 0
+    with torch.no_grad():
+        for i, data in enumerate(test_loader):
+            frame, velocity, angular_v, goal, cp_metrics, cp_accels = data
+            optimizer.zero_grad()
+            frame = frame.to(device)
+            velocity = velocity.to(device)
+            angular_v = angular_v.to(device)
+            goal = goal.to(device)
+            cp_metrics = cp_metrics.to(device)
+            cp_accels = cp_accels.to(device)
+            accel, metric_full = model(frame, velocity, angular_v, goal)
+            loss = criterion(accel, cp_accels) + criterion(metric_full, cp_metrics)
+            test_loss += loss
+            test_acc += (torch.sum(accel == cp_accels) + torch.sum(metric_full == cp_metrics))
+    test_loss = float(test_loss) / len(test_loader.dataset)
+    test_acc = float(test_acc) / len(test_loader.dataset)
+
+    print('Test loss: ', test_loss, 'Test acc: ', test_acc)
+
+test()
