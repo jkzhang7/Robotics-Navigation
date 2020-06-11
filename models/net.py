@@ -5,6 +5,7 @@ from torch import nn
 import torch.nn.functional as F
 import torchvision
 
+
 class ImageEncoderV3(nn.Module):
     def __init__(self, output_dim=512, init_scale=1.0, residual_link=False):
         super(ImageEncoderV3, self).__init__()
@@ -60,13 +61,13 @@ class WaypointEncoder(nn.Module):
     def forward(self, wp):
         x = F.relu(self.fc1(wp))
         x = F.relu(self.fc2(x))
-        x = x.squeeze(0)
         return x
+
 
 class VelocityEncoder(nn.Module):
     def __init__(self, init_scale=1.0):
         super(VelocityEncoder, self).__init__()
-        self.fc1 = nn.Linear(2, 256)
+        self.fc1 = nn.Linear(1, 256)
         self.fc2 = nn.Linear(256, 256)
         for layer in (self.fc1, self.fc2):
             nn.init.orthogonal_(layer.weight, init_scale)
@@ -92,7 +93,6 @@ class AngularVelocityEncoder(nn.Module):
     def forward(self, angular_vel):
         x = F.relu(self.fc1(angular_vel))
         x = F.relu(self.fc2(x))
-        x = x.unsqueeze(0)
         return x
 
 
@@ -231,22 +231,15 @@ class neuralRMP(nn.Module):
         self.rmp_regress = RMPRegressor(input_dim=1280, n_control_points=12, init_scale=1.0)
 
     def forward(self, image, vel, ang, goal):
+
         image_feature = self.resnet(image)
-        # print(image_feature.shape)
-        # torch.reshape(image_feature, (3, 64, 64))
-        # image_feature = image_feature.res
         image_ = self.image_encodeV2(image_feature)
         vel_ = self.vel_encode(vel)
         ang_ = self.ang_encode(ang)
         goal_ = self.goal_encode(goal)
         combined_0 = torch.cat((image_, vel_), dim=1)
         combined_1 = torch.cat((combined_0, ang_), dim=1)
-
-        # print(goal_.shape)
         combined_2 = torch.cat((combined_1, goal_), dim=1)
         accel, metric_full = self.rmp_regress(combined_2)
 
         return accel, metric_full
-
-# net = neuralRMP()
-# print(net)
